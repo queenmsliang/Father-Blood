@@ -6,6 +6,7 @@
 <title>爸爸血液數值 — 六大指標趨勢圖</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <style>
   :root{
     --bg:#f4f7fa; --card:#ffffff; --ink:#1f2d3d; --sub:#6b7c8f;
@@ -72,6 +73,7 @@
 
 <script>
 Chart.register(window['chartjs-plugin-annotation']);
+Chart.register(window['ChartDataLabels']);
 
 // 白底外掛：讓畫面與匯出的 PNG 都有白色背景
 const whiteBg={id:'whiteBg',beforeDraw:(c)=>{const x=c.ctx;x.save();
@@ -175,6 +177,9 @@ meta.forEach(m=>{
       pointHoverRadius:7,borderWidth:2.4,tension:.25}]},
     options:{responsive:true,maintainAspectRatio:false,devicePixelRatio:2,parsing:false,
       plugins:{legend:{display:false},annotation:{annotations:ann},
+        datalabels:{align:'top',anchor:'end',offset:3,clamp:true,
+          color:m.color,font:{size:9,weight:'bold'},
+          formatter:(v)=>v.y},
         tooltip:{callbacks:{title:(it)=>(lblMap[it[0].parsed.x]||'')+' （115年）',
           label:(it)=>' '+m.key.toUpperCase()+'：'+it.parsed.y+' '+m.unit}}},
       scales:{x:{type:'linear',min:-0.5,max:28.5,
@@ -183,7 +188,7 @@ meta.forEach(m=>{
           maxRotation:55,minRotation:45,autoSkip:false},
         title:{display:true,text:'檢驗日期（民國115年 月/日）',color:'#95a3b2',font:{size:11}},
         grid:{color:'#eef2f6'}},
-        y:{ticks:{color:'#6b7c8f',font:{size:11}},grid:{color:'#eef2f6'},
+        y:{grace:'12%',ticks:{color:'#6b7c8f',font:{size:11}},grid:{color:'#eef2f6'},
           title:{display:true,text:m.unit,color:'#95a3b2',font:{size:11}}}}},
     plugins:[whiteBg]
   });
