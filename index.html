@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>爸爸血液數值 — 六大指標趨勢圖</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js"></script>
+<style>
+  :root{
+    --bg:#f4f7fa; --card:#ffffff; --ink:#1f2d3d; --sub:#6b7c8f;
+    --line:#e3e9f0; --good:#e8f6ee; --goodln:#9bcdb0;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Microsoft JhengHei","PingFang TC","Noto Sans CJK TC",system-ui,sans-serif;}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px;}
+  header.top{text-align:center;margin-bottom:8px;}
+  header.top h1{font-size:26px;margin:0 0 6px;letter-spacing:1px;}
+  header.top p{margin:2px 0;color:var(--sub);font-size:14px;}
+  .toolbar{text-align:center;margin:14px 0 4px;}
+  .btn{cursor:pointer;border:1px solid var(--goodln);background:var(--good);color:#2c7a4b;
+    border-radius:24px;padding:9px 20px;font-size:14px;font-weight:600;
+    font-family:inherit;transition:.15s;}
+  .btn:hover{background:#d6efe0;}
+  .legend-events{display:flex;flex-wrap:wrap;gap:10px 18px;justify-content:center;
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:14px 18px;margin:18px 0 26px;}
+  .legend-events b{display:block;width:100%;text-align:center;margin-bottom:4px;font-size:14px;color:var(--sub);}
+  .ev{font-size:13px;display:flex;align-items:center;gap:6px;color:var(--ink);}
+  .dot{width:10px;height:10px;border-radius:50%;display:inline-block;}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;}
+  @media(max-width:860px){.grid{grid-template-columns:1fr;}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:18px 18px 14px;box-shadow:0 4px 14px rgba(31,45,61,.04);}
+  .card .hd{display:flex;justify-content:space-between;align-items:flex-start;}
+  .card h2{margin:0 0 2px;font-size:18px;}
+  .card .ref{font-size:13px;color:var(--sub);margin:0 0 10px;}
+  .card .ref .pill{background:var(--good);color:#2c7a4b;border:1px solid var(--goodln);
+    padding:1px 8px;border-radius:20px;font-size:12px;margin-left:4px;}
+  .mini{cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--sub);
+    border-radius:8px;padding:4px 10px;font-size:12px;font-family:inherit;white-space:nowrap;}
+  .mini:hover{border-color:var(--goodln);color:#2c7a4b;}
+  .chartbox{position:relative;height:240px;}
+  .section{grid-column:1/-1;font-size:18px;font-weight:700;color:var(--ink);
+    border-left:5px solid var(--goodln);padding-left:12px;margin:10px 0 -4px;}
+  footer{text-align:center;color:var(--sub);font-size:12px;margin-top:30px;line-height:1.7;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>爸爸血液數值 — 指標趨勢圖（共12項）</h1>
+    <p>資料區間：民國115/05/26 ～ 115/06/23（2026年）</p>
+    <p>橘色點＝超出健康參考範圍　|　綠色區帶＝健康參考標準值</p>
+  </header>
+
+  <div class="toolbar">
+    <button class="btn" onclick="downloadAll()">⬇ 下載全部12張 PNG</button>
+  </div>
+
+  <div class="legend-events" id="evLegend">
+    <b>關鍵醫療歷程（垂直虛線標記）</b>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <footer>
+    資料來源：健康存摺檢驗紀錄（11份PDF）　·　本圖僅供照護紀錄與就醫溝通參考，請以主治醫師判讀為準。
+  </footer>
+</div>
+
+<script>
+Chart.register(window['chartjs-plugin-annotation']);
+
+// 白底外掛：讓畫面與匯出的 PNG 都有白色背景
+const whiteBg={id:'whiteBg',beforeDraw:(c)=>{const x=c.ctx;x.save();
+  x.globalCompositeOperation='destination-over';x.fillStyle='#ffffff';
+  x.fillRect(0,0,c.width,c.height);x.restore();}};
+
+const dates = [
+ {d:0,  lbl:'5/26'},{d:3,  lbl:'5/29'},{d:6,  lbl:'6/01'},{d:8,  lbl:'6/03'},
+ {d:10, lbl:'6/05'},{d:11, lbl:'6/06'},{d:13, lbl:'6/08'},{d:15, lbl:'6/10'},
+ {d:16, lbl:'6/11'},{d:19, lbl:'6/14'},{d:21, lbl:'6/16'},{d:23, lbl:'6/18'},
+ {d:25, lbl:'6/20'},{d:28, lbl:'6/23'}
+];
+const lblMap={}; dates.forEach(o=>lblMap[o.d]=o.lbl);
+
+const series = {
+  wbc:[13.9, 8.7, 9.6, 10.8, 14.4, 9.0, 13.2, 16.0, 16.8, 15.4, 19.06, 15.89, 12.3, 13.1],
+  rbc:[2.77, 2.61, null, 2.59, 2.63, 2.60, 2.67, 2.80, 2.85, 2.93, 2.89, null, null, null],
+  hb: [10.0, 9.4, 9.6, 9.7, 9.3, 9.9, 9.5, 10.0, 10.1, 10.5, 10.6, 9.0, 9.5, 9.7],
+  plt:[30, 18, 32, 26, 25, 25, 26, 26, 27, 31, 34, 41, 26, 44],
+  crp:[null,null,null,null,null,44.2,null,null,null,82.9,98.6,null, 67.3, 73.2],
+  seg:[23.6, 22.5, 19.3, 23, 18, 19.8, 18, 19, 10.6, 14.8, 14.0, 29.3, 26.6, 19.0],
+  alb:[null,null,null,null,null,null,null,null,null,null,2.9,null,2.6,2.7],
+  na: [null,132,132,null,135,137,136,null,140,141,140,null,147,142],
+  k:  [null,4.2,3.6,null,4.0,3.8,3.4,null,4.0,4.0,3.9,null,3.5,3.7],
+  crea:[0.64,0.70,0.80,null,0.84,0.83,0.79,null,0.77,0.77,0.74,null,0.78,0.84],
+  alt:[47,34,33,null,26,31,27,null,32,null,33,null,31,34],
+  hct:[29.6,28.1,null,28.5,28.0,29.2,28.8,29.6,30.3,31.3,32.3,null,null,null]
+};
+const ref={wbc:[4.0,10.0], rbc:[4.2,5.4], hb:[13,17], plt:[150,400], crp:[0,5], seg:[40,75],
+  alb:[3.5,5.0], na:[135,145], k:[3.5,5.1], crea:[0.7,1.3], alt:[0,40], hct:[40,52]};
+
+const meta=[
+  {grp:'六大核心指標',key:'wbc',name:'白血球 WBC',unit:'×10³/µL',refTxt:'4.0 – 10.0 ×10³/µL',color:'#2e7dd1',file:'1_白血球WBC'},
+  {grp:'六大核心指標',key:'rbc',name:'紅血球 RBC',unit:'×10⁶/µL',refTxt:'4.2 – 5.4 ×10⁶/µL',color:'#c0392b',file:'2_紅血球RBC'},
+  {grp:'六大核心指標',key:'hb', name:'血紅素 Hb', unit:'g/dL',   refTxt:'13 – 17 g/dL',      color:'#e74c3c',file:'3_血紅素Hb'},
+  {grp:'六大核心指標',key:'plt',name:'血小板 Plt',unit:'×10³/µL',refTxt:'150 – 400 ×10³/µL', color:'#8e44ad',file:'4_血小板Plt'},
+  {grp:'六大核心指標',key:'crp',name:'發炎指數 CRP',unit:'mg/L', refTxt:'< 5 mg/L',          color:'#e67e22',file:'5_發炎指數CRP'},
+  {grp:'六大核心指標',key:'seg',name:'噬中性球 Seg',unit:'%',    refTxt:'40 – 75 %',         color:'#16a085',file:'6_噬中性球Seg'},
+  {grp:'其他追蹤指標',key:'alb', name:'白蛋白 Albumin', unit:'g/dL',  refTxt:'3.5 – 5.0 g/dL',   color:'#b7950b',file:'7_白蛋白Albumin'},
+  {grp:'其他追蹤指標',key:'na',  name:'鈉 Na',          unit:'mmol/L',refTxt:'135 – 145 mmol/L', color:'#2e86c1',file:'8_鈉Na'},
+  {grp:'其他追蹤指標',key:'k',   name:'鉀 K',           unit:'mmol/L',refTxt:'3.5 – 5.1 mmol/L', color:'#229954',file:'9_鉀K'},
+  {grp:'其他追蹤指標',key:'crea',name:'肌酸酐 Creatinine',unit:'mg/dL',refTxt:'0.7 – 1.3 mg/dL', color:'#7d3c98',file:'10_肌酸酐Creatinine'},
+  {grp:'其他追蹤指標',key:'alt', name:'肝功能 ALT',     unit:'U/L',   refTxt:'0 – 40 U/L',       color:'#ca6f1e',file:'11_肝功能ALT'},
+  {grp:'其他追蹤指標',key:'hct', name:'血容比 Hct',     unit:'%',     refTxt:'40 – 52 %',        color:'#cb4335',file:'12_血容比Hct'}
+];
+
+const events=[
+  {x:1,  txt:'5/27 血小板掉到15（打血小板）', short:'5/27 打血小板',  c:'#e0457b', pos:'start'},
+  {x:3,  txt:'5/29 醫師判定復發',             short:'5/29 復發',      c:'#8e44ad', pos:'end'},
+  {x:16, txt:'6/11 發燒 38°C',                short:'6/11 發燒38°',   c:'#e67e22', pos:'start'},
+  {x:19, txt:'6/14 發燒 38.4°C',              short:'6/14 發燒38.4°', c:'#d35400', pos:'end'},
+  {x:21, txt:'6/16 血小板34（打血小板）',     short:'6/16 打血小板',  c:'#e0457b', pos:'start'},
+  {x:22, txt:'6/17 檢出細菌 Stenotrophomonas',short:'6/17 檢出細菌',  c:'#16a085', pos:'end'},
+  {x:27, txt:'6/22 打一包血小板',             short:'6/22 打血小板',  c:'#e0457b', pos:'start'}
+];
+
+const lg=document.getElementById('evLegend');
+events.forEach(e=>{const s=document.createElement('span');s.className='ev';
+  s.innerHTML=`<span class="dot" style="background:${e.c}"></span>${e.txt}`;lg.appendChild(s);});
+
+// 建立卡片（依分組插入區段標題）
+const grid=document.getElementById('grid');
+let curGrp='';
+meta.forEach(m=>{
+  if(m.grp!==curGrp){curGrp=m.grp;
+    const h=document.createElement('div');h.className='section';h.textContent=m.grp;
+    grid.appendChild(h);}
+  const card=document.createElement('div');card.className='card';
+  card.innerHTML=`<div class="hd"><div><h2>${m.name}</h2>
+    <p class="ref">健康參考值 <span class="pill">${m.refTxt}</span></p></div>
+    <button class="mini" onclick="downloadOne('${m.key}')">⬇ PNG</button></div>
+    <div class="chartbox"><canvas id="c_${m.key}"></canvas></div>`;
+  grid.appendChild(card);
+});
+
+const charts={};
+
+meta.forEach(m=>{
+ try{
+  const [lo,hi]=ref[m.key];
+  const pts=[],pc=[],pr=[];
+  dates.forEach((o,i)=>{
+    const v=series[m.key][i];
+    if(v==null) return;            // 無數據當日：直接略過，避免 null 造成錯誤
+    pts.push({x:o.d,y:v});
+    pc.push((v<lo||v>hi)?'#f5821f':m.color);
+    pr.push(5);
+  });
+  const ann={ref:{type:'box',yMin:lo,yMax:hi,backgroundColor:'rgba(120,200,150,.13)',
+    borderColor:'rgba(120,200,150,.45)',borderWidth:1}};
+  events.forEach((e,idx)=>{ann['ev'+idx]={type:'line',xMin:e.x,xMax:e.x,
+    borderColor:e.c,borderWidth:1.6,borderDash:[5,4],
+    label:{display:true,content:e.short,rotation:-90,position:e.pos,
+      backgroundColor:'rgba(255,255,255,.88)',color:e.c,
+      font:{size:10,weight:'bold'},padding:{x:3,y:2},borderRadius:4,
+      borderColor:e.c,borderWidth:1}};});
+  charts[m.key]=new Chart(document.getElementById('c_'+m.key),{
+    type:'line',
+    data:{datasets:[{data:pts,borderColor:m.color,backgroundColor:m.color,
+      pointBackgroundColor:pc,pointBorderColor:pc,pointRadius:pr,
+      pointHoverRadius:7,borderWidth:2.4,tension:.25}]},
+    options:{responsive:true,maintainAspectRatio:false,devicePixelRatio:2,parsing:false,
+      plugins:{legend:{display:false},annotation:{annotations:ann},
+        tooltip:{callbacks:{title:(it)=>(lblMap[it[0].parsed.x]||'')+' （115年）',
+          label:(it)=>' '+m.key.toUpperCase()+'：'+it.parsed.y+' '+m.unit}}},
+      scales:{x:{type:'linear',min:-0.5,max:28.5,
+        afterBuildTicks:(axis)=>{axis.ticks=dates.map(o=>({value:o.d}));},
+        ticks:{callback:(v)=>lblMap[v]||'',color:'#445463',font:{size:11},
+          maxRotation:55,minRotation:45,autoSkip:false},
+        title:{display:true,text:'檢驗日期（民國115年 月/日）',color:'#95a3b2',font:{size:11}},
+        grid:{color:'#eef2f6'}},
+        y:{ticks:{color:'#6b7c8f',font:{size:11}},grid:{color:'#eef2f6'},
+          title:{display:true,text:m.unit,color:'#95a3b2',font:{size:11}}}}},
+    plugins:[whiteBg]
+  });
+ }catch(err){
+  console.error('chart '+m.key+' failed:',err);
+  document.getElementById('c_'+m.key).insertAdjacentHTML('afterend',
+    '<p style="color:#c0392b;font-size:13px">圖表載入失敗：'+err.message+'</p>');
+ }
+});
+
+// 匯出：把圖表合成到含標題與參考值的白底大圖
+function exportCanvas(m){
+  const chart=charts[m.key];
+  const W=1100,H=640,pad=40;
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;
+  const x=cv.getContext('2d');
+  x.fillStyle='#ffffff';x.fillRect(0,0,W,H);
+  // 標題
+  x.fillStyle='#1f2d3d';x.font='bold 30px "Microsoft JhengHei","PingFang TC",sans-serif';
+  x.textBaseline='top';x.fillText(m.name,pad,28);
+  // 參考值膠囊
+  x.font='16px "Microsoft JhengHei","PingFang TC",sans-serif';
+  const rt='健康參考值　'+m.refTxt;
+  const tw=x.measureText(rt).width;
+  x.fillStyle='#e8f6ee';roundRect(x,pad,72,tw+24,30,15);x.fill();
+  x.fillStyle='#2c7a4b';x.fillText(rt,pad+12,80);
+  // 圖表影像
+  const img=new Image();
+  const url=chart.toBase64Image('image/png',1);
+  return new Promise(res=>{
+    img.onload=()=>{
+      const iy=118,ih=H-iy-86;const iw=W-pad*2;
+      x.drawImage(img,pad,iy,iw,ih);
+      // 事件小註腳
+      x.fillStyle='#6b7c8f';x.font='13px "Microsoft JhengHei","PingFang TC",sans-serif';
+      x.fillText('橘色點＝超出參考範圍　·　綠色區帶＝健康參考值　·　虛線＝關鍵醫療事件',pad,H-66);
+      let ex=pad,ey=H-44;
+      events.forEach(e=>{
+        x.fillStyle=e.c;x.beginPath();x.arc(ex+5,ey+8,5,0,7);x.fill();
+        x.fillStyle='#1f2d3d';x.font='12px "Microsoft JhengHei","PingFang TC",sans-serif';
+        x.fillText(e.txt,ex+16,ey+2);
+        ex+=x.measureText(e.txt).width+44;
+        if(ex>W-260){ex=pad;ey+=22;}
+      });
+      res(cv);
+    };
+    img.src=url;
+  });
+}
+function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);
+  c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+
+async function downloadOne(key){
+  const m=meta.find(o=>o.key===key);
+  const cv=await exportCanvas(m);
+  const a=document.createElement('a');a.download=m.file+'.png';
+  a.href=cv.toDataURL('image/png');a.click();
+}
+async function downloadAll(){
+  for(const m of meta){await downloadOne(m.key);await new Promise(r=>setTimeout(r,400));}
+}
+</script>
+</body>
+</html>
