@@ -61,13 +61,13 @@
 <body>
 <div class="wrap">
   <header class="top">
-    <h1>爸爸血液數值 — 指標趨勢圖（共12項）</h1>
+    <h1>爸爸血液數值 — 指標趨勢圖（共17項）</h1>
     <p>資料區間：民國115/03/12 ～ 115/07/02（2026年）</p>
     <p>橘色點＝超出健康參考範圍　|　綠色區帶＝健康參考標準值</p>
   </header>
 
   <div class="toolbar">
-    <button class="btn" onclick="downloadAll()">⬇ 下載全部12張 PNG</button>
+    <button class="btn" onclick="downloadAll()">⬇ 下載全部17張 PNG</button>
   </div>
 
   <div class="legend-events" id="evLegend">
@@ -116,10 +116,16 @@ const series = {
   k:  [null, null, null, null, null, null, null, null, null, null, null, null, null,4.2,3.6,null,4.0,3.8,3.4,null,4.0,4.0,3.9,null,3.5,3.7, null, 3.8, null, 4.1],
   crea:[null, null, 1.12, null, null, null, null, null, null, null, null, null, 0.64,0.70,0.80,null,0.84,0.83,0.79,null,0.77,0.77,0.74,null,0.78,0.84, null, 0.71, null, 0.63],
   alt:[null, null, null, null, null, null, null, null, null, null, null, null, 47,34,33,null,26,31,27,null,32,null,33,null,31,34, null, 51, null, 89],
-  hct:[32.9, null, null, 31.0, 30.9, null, null, null, null, null, null, null, 29.6,28.1,null,28.5,28.0,29.2,28.8,29.6,30.3,31.3,32.3,null,null,null, null, null, null, null]
+  hct:[32.9, null, null, 31.0, 30.9, null, null, null, null, null, null, null, 29.6,28.1,null,28.5,28.0,29.2,28.8,29.6,30.3,31.3,32.3,null,null,null, null, null, null, null],
+  lym:[71, 60, null, null,null,null,null,null,null,null,null,null, 32.5, 38.3, 48.8, 51, 55, 46.3, 43, 49, 49.6, 51.3, 69.0, 58.6, 53.2, 61.0, 47.3, 46.0, 40.8, 51.0],
+  mono:[5, 12, null, null,null,null,null,null,null,null,null,null, 22.0, 20.0, 12.6, 10, 13, 11.6, 13, 15, 13.8, 16.5, 10.0, 7.1, 16.0, 13.0, 18.3, 9.0, 12.3, 13.3],
+  eos:[null,null,null, null,null,null,null,null,null,null,null,null, 1.6, 10.0, null, 6, 3, 4.1, 8, 5, 6.5, 4.4, 2.0, 4.0, 4.2, 6.0, 6.4, 0.0, 0.0, 0.0],
+  baso:[null,null,null, null,null,null,null,null,null,null,null,null, 0.0, null, null, 1, 0, 0.0, null, null, null, null, 1.0, 1.0, null, null, 0.0, 0.0, 0.0, 0.0],
+  band:[null,null,null, null,null,null,null,null,null,null,null,null, 0.8, null, null, null, null, 0.0, null, null, null, null, 0.0, 0.0, null, null, 0.0, 0.0, 0.0, 0.0]
 };
 const ref={wbc:[4.0,10.0], rbc:[4.2,5.4], hb:[13,17], plt:[150,400], crp:[0,5], seg:[40,75],
-  alb:[3.5,5.0], na:[135,145], k:[3.5,5.1], crea:[0.7,1.3], alt:[0,40], hct:[40,52]};
+  alb:[3.5,5.0], na:[135,145], k:[3.5,5.1], crea:[0.7,1.3], alt:[0,40], hct:[40,52],
+  lym:[15,47], mono:[4.4,11.8], eos:[0.4,7.5], baso:[0.2,1.7], band:[0,4.2]};
 
 const meta=[
   {grp:'六大核心指標',key:'wbc',name:'白血球 WBC',unit:'×10³/µL',refTxt:'4.0 – 10.0 ×10³/µL',color:'#2e7dd1',file:'1_白血球WBC'},
@@ -133,7 +139,12 @@ const meta=[
   {grp:'其他追蹤指標',key:'k',   name:'鉀 K',           unit:'mmol/L',refTxt:'3.5 – 5.1 mmol/L', color:'#229954',file:'9_鉀K'},
   {grp:'其他追蹤指標',key:'crea',name:'肌酸酐 Creatinine',unit:'mg/dL',refTxt:'0.7 – 1.3 mg/dL', color:'#7d3c98',file:'10_肌酸酐Creatinine'},
   {grp:'其他追蹤指標',key:'alt', name:'肝功能 ALT',     unit:'U/L',   refTxt:'0 – 40 U/L',       color:'#ca6f1e',file:'11_肝功能ALT'},
-  {grp:'其他追蹤指標',key:'hct', name:'血容比 Hct',     unit:'%',     refTxt:'40 – 52 %',        color:'#cb4335',file:'12_血容比Hct'}
+  {grp:'其他追蹤指標',key:'hct', name:'血容比 Hct',     unit:'%',     refTxt:'40 – 52 %',        color:'#cb4335',file:'12_血容比Hct'},
+  {grp:'白血球分類（％）',key:'lym', name:'淋巴球 Lymph',  unit:'%', refTxt:'15 – 47 %',   color:'#5b8def',file:'13_淋巴球Lymph'},
+  {grp:'白血球分類（％）',key:'mono',name:'單核球 Mono',   unit:'%', refTxt:'4.4 – 11.8 %',color:'#d97706',file:'14_單核球Mono'},
+  {grp:'白血球分類（％）',key:'eos', name:'嗜酸性球 Eos',  unit:'%', refTxt:'0.4 – 7.5 %', color:'#db2777',file:'15_嗜酸性球Eos'},
+  {grp:'白血球分類（％）',key:'baso',name:'嗜鹼性球 Baso', unit:'%', refTxt:'0.2 – 1.7 %', color:'#0891b2',file:'16_嗜鹼性球Baso'},
+  {grp:'白血球分類（％）',key:'band',name:'帶狀核球 Band', unit:'%', refTxt:'0 – 4.2 %',   color:'#6d28d9',file:'17_帶狀核Band'}
 ];
 
 const events=[
